@@ -95,7 +95,7 @@ pub trait BitmapKey: Sized + sealed::Sealed {
             .all(|(word, other_word)| word & other_word == 0)
     }
 
-    fn count_ones(&self) -> usize {
+    fn count(&self) -> usize {
         self.words().iter().map(|word| word.count_ones() as usize).sum()
     }
 }
