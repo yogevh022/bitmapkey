@@ -1,4 +1,3 @@
-use std::fmt::{Debug, Display};
 
 #[macro_export]
 macro_rules! bitmap_key {
@@ -51,7 +50,7 @@ macro_rules! bitmap_key {
             }
         }
 
-        impl Debug for $key {
+        impl std::fmt::Debug for $key {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 writeln!(f, "{} [", stringify!($key))?;
 
@@ -68,7 +67,7 @@ macro_rules! bitmap_key {
             }
         }
 
-        impl Display for $key {
+        impl std::fmt::Display for $key {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 write!(
                     f,
