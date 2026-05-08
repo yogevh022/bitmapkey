@@ -8,45 +8,19 @@ macro_rules! bitmap_key {
         };
 
         #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-        struct $key(pub(crate) [usize; $bits / u64::BITS as usize]);
+        struct $key(pub(crate) [u64; $bits / u64::BITS as usize]);
 
         impl $crate::sealed::Sealed for $key {}
 
         impl $crate::BitmapKey for $key {
             const EMPTY: Self = $key([0; $bits / u64::BITS as usize]);
 
-            fn with_id(mut self, id: usize) -> Self {
-                let component_bit = id as u32 - 1;
-                let bit = component_bit % u64::BITS;
-                let word = component_bit / u64::BITS;
-                self.0[word as usize] |= 1 << bit;
-                self
+            fn words(&self) -> &[u64] {
+                &self.0
             }
 
-            fn without_id(mut self, id: usize) -> Self {
-                let component_bit = id as u32 - 1;
-                let bit = component_bit % u64::BITS;
-                let word = component_bit / u64::BITS;
-                self.0[word as usize] &= !(1 << bit);
-                self
-            }
-
-            fn contains(&self, other: &Self) -> bool {
-                self.0
-                    .iter()
-                    .zip(other.0.iter())
-                    .all(|(self_word, other_word)| self_word & other_word == *other_word)
-            }
-
-            fn disjoint(&self, other: &Self) -> bool {
-                self.0
-                    .iter()
-                    .zip(other.0.iter())
-                    .all(|(word, other_word)| word & other_word == 0)
-            }
-
-            fn count_ones(&self) -> usize {
-                self.0.iter().map(|word| word.count_ones() as usize).sum()
+            fn words_mut(&mut self) -> &mut [u64] {
+                &mut self.0
             }
         }
 
@@ -85,14 +59,45 @@ pub mod sealed {
     pub trait Sealed {}
 }
 
-pub trait BitmapKey: sealed::Sealed {
+pub trait BitmapKey: Sized + sealed::Sealed {
     const EMPTY: Self;
 
-    fn with_id(self, id: usize) -> Self;
-    fn without_id(self, id: usize) -> Self;
-    fn contains(&self, other: &Self) -> bool;
-    fn disjoint(&self, other: &Self) -> bool;
-    fn count_ones(&self) -> usize;
+    fn words(&self) -> &[u64];
+    fn words_mut(&mut self) -> &mut [u64];
+
+    fn with_id(mut self, id: usize) -> Self {
+        let component_bit = id as u32 - 1;
+        let bit = component_bit % u64::BITS;
+        let word = component_bit / u64::BITS;
+        self.words_mut()[word as usize] |= 1 << bit;
+        self
+    }
+
+    fn without_id(mut self, id: usize) -> Self {
+        let component_bit = id as u32 - 1;
+        let bit = component_bit % u64::BITS;
+        let word = component_bit / u64::BITS;
+        self.words_mut()[word as usize] &= !(1 << bit);
+        self
+    }
+
+    fn contains(&self, other: &Self) -> bool {
+        self.words()
+            .iter()
+            .zip(other.words().iter())
+            .all(|(self_word, other_word)| self_word & other_word == *other_word)
+    }
+
+    fn disjoint(&self, other: &Self) -> bool {
+        self.words()
+            .iter()
+            .zip(other.words().iter())
+            .all(|(word, other_word)| word & other_word == 0)
+    }
+
+    fn count_ones(&self) -> usize {
+        self.words().iter().map(|word| word.count_ones() as usize).sum()
+    }
 }
 
 
