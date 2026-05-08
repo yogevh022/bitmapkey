@@ -1,14 +1,14 @@
 
 #[macro_export]
 macro_rules! bitmap_key {
-    ($key:ident, $bits:expr) => {
+    ($vis:vis $key:ident, $bits:expr) => {
         const _: () = {
             assert!($bits > 0, "key bits must be greater than 0");
             assert!($bits % u64::BITS as usize == 0, "key bits must be a multiple of u64::BITS");
         };
 
         #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-        struct $key(pub(crate) [u64; $bits / u64::BITS as usize]);
+        $vis struct $key(pub(crate) [u64; $bits / u64::BITS as usize]);
 
         impl $crate::sealed::Sealed for $key {}
 
@@ -105,8 +105,8 @@ pub trait BitmapKey: Sized + sealed::Sealed {
 mod tests {
     use super::*;
 
-    bitmap_key!(TestKey, 512);
-    bitmap_key!(TestKey2, 64);
+    bitmap_key!(pub TestKey, 512);
+    bitmap_key!(pub(crate) TestKey2, 64);
 
     #[test]
     fn it_works() {
